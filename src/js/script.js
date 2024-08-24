@@ -35,7 +35,7 @@ scene.add(ambi);
 const lamp = new tjs.DirectionalLight(0xFFFFFF, 0.8);
 scene.add(lamp);
 lamp.position.set(0, 6, 0);
-lamp.shadow.camera.bottom(-12);
+// lamp.shadow.camera.bottom(-12);
 
 const lampHelper = new tjs.DirectionalLightHelper(lamp);
 scene.add(lampHelper);
