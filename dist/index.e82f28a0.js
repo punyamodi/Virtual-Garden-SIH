@@ -607,7 +607,7 @@ scene.add(ambi);
 const lamp = new _three.DirectionalLight(0xFFFFFF, 0.8);
 scene.add(lamp);
 lamp.position.set(0, 6, 0);
-lamp.shadow.camera.bottom(-12);
+// lamp.shadow.camera.bottom(-12);
 const lampHelper = new _three.DirectionalLightHelper(lamp);
 scene.add(lampHelper);
 const spotLight = new _three.SpotLight(0xFFFFFF);
