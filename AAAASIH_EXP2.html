@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>three.js - First & Third Person Perspective</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <style>
+      body { margin: 0; overflow: hidden; }
+      a { color: #f00; }
+      #vrButton {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        padding: 10px 20px;
+        background-color: #f00;
+        color: #fff;
+        font-size: 18px;
+        border: none;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="container"></div>
+    <div id="info">
+      <a href="https://threejs.org" target="_blank" rel="noopener">three.js</a> - First & Third Person Perspective
+      <br />Use WASD keys to move, press 'P' to toggle between perspectives. Hold 'Shift' to run.
+    </div>
+    <button id="vrButton">Enter VR</button>
+
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "../build/three.module.js",
+          "three/addons/": "./jsm/"
+        }
+      }
+    </script>
+
+    <script type="module">
+      import * as THREE from 'three';
+      import Stats from 'three/addons/libs/stats.module.js';
+      import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+      import { VRButton } from 'three/addons/webxr/VRButton.js';
+
+      let scene, renderer, camera, stats, character, mixer, clock;
+      let isThirdPerson = true;
+      const walkSpeed = 3.5;
+      const runSpeed = 7.0;
+      let isRunning = false;
+      let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
+
+      init();
+
+      function init() {
+        const container = document.getElementById('container');
+
+        // Scene setup
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xa0a0a0);
+
+        // Camera setup
+        camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+
+        // Renderer setup
+        renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.xr.enabled = true; // Enable WebXR
+        container.appendChild(renderer.domElement);
+
+        // Add VR button
+        document.body.appendChild(VRButton.createButton(renderer));
+
+        // Lights
+        const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 1);
+        hemiLight.position.set(0, 20, 0);
+        scene.add(hemiLight);
+
+        const dirLight = new THREE.DirectionalLight(0xffffff, 2);
+        dirLight.position.set(-3, 10, -10);
+        dirLight.castShadow = true;
+        scene.add(dirLight);
+
+        // Ground
+        const mesh = new THREE.Mesh(new THREE.PlaneGeometry(100, 100), new THREE.MeshPhongMaterial({ color: 0xcbcbcb, depthWrite: false }));
+        mesh.rotation.x = -Math.PI / 2;
+        mesh.receiveShadow = true;
+        scene.add(mesh);
+
+        // Center Marker (Pole)
+        const poleGeometry = new THREE.CylinderGeometry(0.2, 0.2, 5, 32);
+        const poleMaterial = new THREE.MeshPhongMaterial({ color: 0xff0000 });
+        const pole = new THREE.Mesh(poleGeometry, poleMaterial);
+        pole.position.set(0, 2.5, 0); // Center of the plane
+        pole.castShadow = true;
+        scene.add(pole);
+
+        // Model loading
+        const loader = new GLTFLoader();
+        loader.load('models/gltf/Soldier.glb', function (gltf) {
+          character = gltf.scene;
+          character.scale.set(1.0, 1.0, 1.0);
+          scene.add(character);
+
+          character.traverse(function (object) {
+            if (object.isMesh) object.castShadow = true;
+          });
+
+          mixer = new THREE.AnimationMixer(character);
+          const idleAction = mixer.clipAction(gltf.animations[0]);
+          const walkAction = mixer.clipAction(gltf.animations[3]);
+          const runAction = mixer.clipAction(gltf.animations[1]);
+          idleAction.play();
+
+          animateCharacter(idleAction, walkAction, runAction);
+        });
+
+        // Stats setup
+        stats = new Stats();
+        container.appendChild(stats.dom);
+
+        // Clock for animations
+        clock = new THREE.Clock();
+
+        document.addEventListener('keydown', onKeyDown);
+        document.addEventListener('keyup', onKeyUp);
+        window.addEventListener('resize', onWindowResize);
+      }
+
+      function onKeyDown(event) {
+        switch (event.code) {
+          case 'ArrowUp':
+          case 'KeyW':
+            moveForward = true;
+            break;
+          case 'ArrowLeft':
+          case 'KeyA':
+            moveLeft = true;
+            break;
+          case 'ArrowDown':
+          case 'KeyS':
+            moveBackward = true;
+            break;
+          case 'ArrowRight':
+          case 'KeyD':
+            moveRight = true;
+            break;
+          case 'ShiftLeft':
+          case 'ShiftRight':
+            isRunning = true;
+            break;
+          case 'KeyP':
+            togglePerspective();
+            break;
+        }
+      }
+
+      function onKeyUp(event) {
+        switch (event.code) {
+          case 'ArrowUp':
+          case 'KeyW':
+            moveForward = false;
+            break;
+          case 'ArrowLeft':
+          case 'KeyA':
+            moveLeft = false;
+            break;
+          case 'ArrowDown':
+          case 'KeyS':
+            moveBackward = false;
+            break;
+          case 'ArrowRight':
+          case 'KeyD':
+            moveRight = false;
+            break;
+          case 'ShiftLeft':
+          case 'ShiftRight':
+            isRunning = false;
+            break;
+        }
+      }
+
+      function togglePerspective() {
+        isThirdPerson = !isThirdPerson;
+      }
+
+      function animateCharacter(idleAction, walkAction, runAction) {
+        function animate() {
+          renderer.setAnimationLoop(animate); // Set the animation loop for WebXR
+
+          const delta = clock.getDelta();
+          if (mixer) mixer.update(delta);
+
+          const direction = new THREE.Vector3();
+          const rotation = new THREE.Euler(0, 0, 0, 'YXZ');
+          const currentSpeed = isRunning && moveForward ? runSpeed : walkSpeed;
+
+          // Calculate direction and rotation
+          if (moveForward) direction.z -= currentSpeed * delta;
+          if (moveBackward) direction.z += walkSpeed * delta; // Only walking backward
+          if (moveLeft) rotation.y += 0.01;
+          if (moveRight) rotation.y -= 0.01;
+
+          // Apply rotation and movement
+          character.rotation.y += rotation.y;
+          direction.applyEuler(character.rotation);
+          character.position.add(direction);
+
+          // Switch animations based on movement
+          if (moveForward || moveBackward) {
+            if (isRunning && moveForward) {
+              if (!runAction.isRunning()) {
+                walkAction.stop();
+                runAction.play();
+              }
+            } else {
+              if (!walkAction.isRunning()) {
+                runAction.stop();
+                walkAction.play();
+              }
+            }
+          } else {
+            if (walkAction.isRunning()) walkAction.stop();
+            if (runAction.isRunning()) runAction.stop();
+            idleAction.play();
+          }
+
+          // Camera follows the character from behind in third-person view
+          if (isThirdPerson) {
+            // Third-person view
+            const firstPersonPosition = new THREE.Vector3(0, 2, 2.3).applyMatrix4(character.matrixWorld); // Third-person camera position (head level)
+            camera.position.lerp(firstPersonPosition, 0.1);
+            camera.rotation.copy(character.rotation); // Sync rotation with the character
+          } else {
+            // First-person view
+            const firstPersonPosition = new THREE.Vector3(0, 1.7, -1).applyMatrix4(character.matrixWorld); // First-person camera position (head level)
+            camera.position.lerp(firstPersonPosition, 0.1);
+            camera.rotation.copy(character.rotation); // Sync rotation with the character
+          }
+
+          renderer.render(scene, camera);
+          stats.update();
+        }
+
+        animate();
+      }
+
+      function onWindowResize() {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      }
+    </script>
+  </body>
+</html>
