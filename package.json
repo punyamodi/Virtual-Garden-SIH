@@ -1,14 +1,14 @@
 {
   "dependencies": {
-    "cannon-es": "^0.20.0",
     "parcel": "^2.12.0",
-    "three": "^0.168.0"
+    "three": "^0.168.0",
+    "three-addons": "^1.2.0"
   },
   "scripts": {
     "start": "parcel ./src/index.html"
   },
   "devDependencies": {
-    "@parcel/transformer-js": "^2.12.0",
-    "buffer": "^5.5.0||^6.0.0"
+    "@types/three": "^0.168.0",
+    "buffer": "^6.0.3"
   }
 }
