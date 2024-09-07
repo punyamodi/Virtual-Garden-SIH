@@ -5,102 +5,78 @@ import { RGBELoader } from 'three/examples/jsm/Addons.js';
 import Stats from 'three/examples/jsm/libs/stats.module.js';
 import { GLTFLoader } from 'three/examples/jsm/Addons.js';
 
-//Setting up URLs
-const test = new URL('./public/models/test.glb', import.meta.url);
+//WebGL Renderer Setup
+const renderer = new tjs.WebGLRenderer();
+renderer.setSize(window.innerWidth, window.innerHeight);
+document.body.appendChild(renderer.domElement);
+renderer.setPixelRatio(window.devicePixelRatio);
+renderer.toneMapping = tjs.AgXToneMapping; //AGX Tone Mapping
+renderer.toneMappingExposure = 1.0;
 
-//Basic Setup / Boilerplate Code
-let renderer, camera, scene, controls, gui, stats;
+//Camera + Control Setup
+//Near & Far Values here determine the starting & ending points of view distance, heavily affects performance.
+const camera = new tjs.PerspectiveCamera(
+    90,
+    window.innerWidth / window.innerHeight,
+    0.1,
+    100
+);
 
-init();
-render();
+const orbit = new OrbitControls(camera, renderer.domElement);
+camera.position.set(6, 8, 14);
+orbit.update();
 
-async function init() {
-    //Camera & Scene Setup
-    camera = new tjs.PerspectiveCamera(
-        90,
-        window.innerWidth / window.innerHeight,
-        0.1,
-        1000
-    );
-    camera.position.set(0, -2, 6);
-    scene = new tjs.Scene();
+/**
+ * Scene Setup
+ */
+const scene = new tjs.Scene();
 
-    //GUI Setup with Parameters
-    let conf = {
-        exposure: 1.0
-    };
-    gui = new GUI();
-    gui.add(conf, 'exposure'.name('Exposure'));
-    gui.open();
+new RGBELoader()
+    .setPath('./public/hdri/')
+    .load('kloppenheim_02_4k.hdr', function(texture){
+        texture.mapping = tjs.EquirectangularReflectionMapping;
 
-    stats = new Stats();
-    document.body.appendChild(stats.dom);
+        scene.background = texture;
+        scene.environment = texture;
 
-    //Image Based Lighting (IBL) Setup
-    new RGBELoader()
-        .setPath('../assets/hdri/')
-        .load('Acannon_8k.exr', function(texture){
-            texture.mapping = tjs.EquirectangularReflectionMapping;
+        render();
+    });
 
-            scene.background = texture;
-            scene.environment = texture;
+const axes = new tjs.AxesHelper();
+scene.add(axes);
 
-            render();
-            //Loading Models
-            const grid = new tjs.GridHelper();
-            scene.add(grid);
+const grid = new tjs.GridHelper(20);
+scene.add(grid);
 
-            const boxGeometry = new tjs.BoxGeometry();
-            const boxMaterial = new tjs.MeshPhysicalMaterial({
-                color: 0x0FFD700,
-                metalness: 1.0,
-                roughness: 0.2 
-            });
-            const box = new tjs.Mesh(boxGeometry, boxMaterial);
-            box.position.set(8, 8, 0);
-            scene.add(box);
 
-            const sled = new GLTFLoader();
-            sled.load(test.href, function(gltf){
-                const model = gltf.scene;
-                scene.add(model);
-                model.scale = 0.1;
-            }, undefined, function(err){
-                console.error(err);
-            });
-        });
 
-    //Renderer Initialisation
-    renderer = new tjs.WebGLRenderer( { antialias: true } );
-    renderer.setPixelRatio(window.devicePixelRatio);
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setAnimationLoop(animate);
-    renderer.toneMapping = tjs.AgXToneMapping;
-    renderer.exposure = 1.0;
-    document.body.appendChild(renderer.domElement);
+//GUI Setup
+const params = {
+    "bgcol": 0xfefefe
+};
 
-    //Control Setup
-    controls = new OrbitControls(camera, renderer.domElement);
-    controls.addEventListener('change', render);
-    controls.update();
+const gui = new GUI();
+gui.open();
 
-    window.addEventListener('resize', onWindowResize);
+const stats = new Stats();
+document.body.appendChild(stats.dom);
+
+//Rendering Setup
+function render(){
+    renderer.render(scene, camera);
 }
 
 //Animation Loop
 function animate(){
     render();
+    stats.update();
 }
 
-//Window Resize Function
-function onWindowResize() {
+renderer.setAnimationLoop(animate);
+
+//Window Resizing Function
+window.addEventListener('resize', function() {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
-    renderer.setSize( window.innerWidth, window.innerHeight );
-    render();
-}
-
-//Rendering & Post Processing Setup
-function render(){
-    renderer.render(scene, camera);
-}
+    renderer.setSize(window.innerWidth, window.innerHeight);
+});
