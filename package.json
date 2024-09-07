@@ -1,14 +1,22 @@
 {
-  "dependencies": {
-    "parcel": "^2.12.0",
-    "three": "^0.168.0",
-    "three-addons": "^1.2.0"
-  },
+  "name": "virtualgarden",
+  "version": "1.0.0",
+  "description": "SIH Project",
+  "main": "main.js",
   "scripts": {
-    "start": "parcel ./src/index.html"
+    "start": "parcel ./index.html",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "Aish Soni",
+  "license": "ISC",
+  "dependencies": {
+    "lil-gui": "^0.19.2",
+    "parcel": "^2.12.0",
+    "three": "^0.166.1"
   },
   "devDependencies": {
-    "@types/three": "^0.168.0",
-    "buffer": "^6.0.3"
+    "buffer": "^6.0.3",
+    "vite": "^5.3.2"
   }
 }

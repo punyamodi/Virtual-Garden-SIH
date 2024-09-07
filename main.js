@@ -1,17 +1,18 @@
 import * as tjs from 'three';
-import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
+import { GUI } from 'lil-gui';
 import { OrbitControls } from 'three/examples/jsm/Addons.js';
 import { RGBELoader } from 'three/examples/jsm/Addons.js';
 import Stats from 'three/examples/jsm/libs/stats.module.js';
 import { GLTFLoader } from 'three/examples/jsm/Addons.js';
 
 //Setting up URLs
-const test = new URL('../assets/test.glb', import.meta.url);
+const test = new URL('./public/models/test.glb', import.meta.url);
 
 //Basic Setup / Boilerplate Code
 let renderer, camera, scene, controls, gui, stats;
 
 init();
+render();
 
 async function init() {
     //Camera & Scene Setup
