@@ -5,6 +5,10 @@ import { RGBELoader } from 'three/examples/jsm/Addons.js';
 import Stats from 'three/examples/jsm/libs/stats.module.js';
 import { GLTFLoader } from 'three/examples/jsm/Addons.js';
 
+//URL Setup
+const hdri = new URL('./public/hdri/kloppenheim_02_4k.hdr', import.meta.url);
+const testModel = new URL('./public/models/test.glb', import.meta.url);
+
 //WebGL Renderer Setup
 const renderer = new tjs.WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
@@ -32,14 +36,22 @@ orbit.update();
 const scene = new tjs.Scene();
 
 new RGBELoader()
-    .setPath('./public/hdri/')
-    .load('kloppenheim_02_4k.hdr', function(texture){
+    .load(hdri.href, function(texture){
         texture.mapping = tjs.EquirectangularReflectionMapping;
 
         scene.background = texture;
         scene.environment = texture;
 
         render();
+        //GLTF Models
+        const loader = new GLTFLoader()
+            .load(testModel.href, function(gltf){
+                gltf.scene.scale.setScalar(0.05);
+                scene.add(gltf.scene);
+                render();
+            }, undefined, function(err){
+                console.error(err);
+            });
     });
 
 const axes = new tjs.AxesHelper();
@@ -48,7 +60,14 @@ scene.add(axes);
 const grid = new tjs.GridHelper(20);
 scene.add(grid);
 
-
+const boxGeo = new tjs.BoxGeometry();
+const boxMat = new tjs.MeshPhysicalMaterial({
+    metalness: 1,
+    roughness: 0.05
+});
+const box = new tjs.Mesh(boxGeo, boxMat);
+scene.add(box);
+box.position.set(8, 8, 3);
 
 //GUI Setup
 const params = {
