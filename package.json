@@ -11,6 +11,7 @@
   "author": "Aish Soni",
   "license": "ISC",
   "dependencies": {
+    "cannon-es": "^0.20.0",
     "lil-gui": "^0.19.2",
     "parcel": "^2.12.0",
     "three": "^0.166.1"

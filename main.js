@@ -10,12 +10,13 @@ const hdri = new URL('./public/hdri/kloppenheim_02_4k.hdr', import.meta.url);
 const testModel = new URL('./public/models/test.glb', import.meta.url);
 
 //WebGL Renderer Setup
-const renderer = new tjs.WebGLRenderer();
+const renderer = new tjs.WebGLRenderer( { antialias: true } );
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 renderer.setPixelRatio(window.devicePixelRatio);
 renderer.toneMapping = tjs.AgXToneMapping; //AGX Tone Mapping
 renderer.toneMappingExposure = 1.0;
+renderer.outputEncoding = tjs.sRGBEncoding;
 
 //Camera + Control Setup
 //Near & Far Values here determine the starting & ending points of view distance, heavily affects performance.
@@ -30,12 +31,40 @@ const orbit = new OrbitControls(camera, renderer.domElement);
 camera.position.set(6, 8, 14);
 orbit.update();
 
+//Loading Screen Setup
+const loadingManager = new tjs.LoadingManager();
+
+loadingManager.onStart = function(url, item, total){
+    console.log(`Started Loading: ${url}`);
+}
+
+const progressBar = document.getElementById('progress-bar');
+
+loadingManager.onProgress = function(url, loaded, total){
+    console.log(`Loading: ${url}`);
+    progressBar.value = (loaded / total) * 100;
+}
+
+const loadingProgressBar = document.querySelector('.loading-progress-bar');
+
+loadingManager.onLoad = function(){
+    console.log(`Finished Loading!`);
+    loadingProgressBar.style.display = 'none';
+}
+
+loadingManager.onError = function(url){
+    console.error(`Error loading: ${url}`);
+}
+
+
 /**
  * Scene Setup
  */
 const scene = new tjs.Scene();
+const gltfLoader= new GLTFLoader(loadingManager);
+const rgbeLoader = new RGBELoader(loadingManager);
 
-new RGBELoader()
+rgbeLoader
     .load(hdri.href, function(texture){
         texture.mapping = tjs.EquirectangularReflectionMapping;
 
@@ -44,7 +73,7 @@ new RGBELoader()
 
         render();
         //GLTF Models
-        const loader = new GLTFLoader()
+        gltfLoader
             .load(testModel.href, function(gltf){
                 gltf.scene.scale.setScalar(0.05);
                 scene.add(gltf.scene);
