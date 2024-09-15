@@ -1,14 +1,17 @@
 import * as tjs from 'three';
 import { GUI } from 'lil-gui';
-import { FirstPersonControls } from 'three/examples/jsm/Addons.js';
+import { OrbitControls } from 'three/examples/jsm/Addons.js';
 import { RGBELoader } from 'three/examples/jsm/Addons.js';
 import Stats from 'three/examples/jsm/libs/stats.module.js';
 import { GLTFLoader } from 'three/examples/jsm/Addons.js';
 import * as cannon from 'cannon-es';
+import { KeyDisplay } from './controlUtil';
+import { CharacterControls } from './tppControls';
 
 //URL Setup
 const hdri = new URL('./public/hdri/kloppenheim_02_4k.hdr', import.meta.url);
-const testModel = new URL('./public/models/test.glb', import.meta.url);
+const testModelURL = new URL('./public/models/test.glb', import.meta.url);
+const characterURL = new URL('./public/models/remy.glb', import.meta.url);
 
 //WebGL Renderer Setup
 const renderer = new tjs.WebGLRenderer( { antialias: true } );
@@ -28,11 +31,49 @@ const camera = new tjs.PerspectiveCamera(
     300
 );
 
-const controls = new FirstPersonControls(camera, renderer.domElement);
-controls.movementSpeed = 12;
-controls.lookSpeed = 0.08;
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true
+controls.minDistance = 5
+controls.maxDistance = 15
+controls.enablePan = false
+controls.maxPolarAngle = Math.PI / 2 - 0.05
+controls.update();
 
 camera.position.set(8, 5, 3);
+
+var characterControls;
+new GLTFLoader()
+    .load(characterURL.href, function (gltf) {
+        const model = gltf.scene;
+        model.traverse(function (object) {
+            if (object.isMesh) object.castShadow = true;
+        });
+        scene.add(model);
+
+        const gltfAnimations = gltf.animations;
+        const mixer = new tjs.AnimationMixer(model);
+        const animationsMap = new Map();
+        gltfAnimations.filter(a => a.name != 'TPose').forEach((a) => {
+            animationsMap.set(a.name, mixer.clipAction(a));
+        });
+
+        characterControls = new CharacterControls(model, mixer, animationsMap, controls, camera,  'Idle');
+    });
+
+const keysPressed = {  }
+const keyDisplayQueue = new KeyDisplay();
+document.addEventListener('keydown', (event) => {
+    keyDisplayQueue.down(event.key)
+    if (event.shiftKey && characterControls) {
+        characterControls.switchRunToggle()
+    } else {
+        (keysPressed)[event.key.toLowerCase()] = true
+    }
+}, false);
+document.addEventListener('keyup', (event) => {
+    keyDisplayQueue.up(event.key);
+    (keysPressed)[event.key.toLowerCase()] = false
+}, false);
 
 //Loading Screen Setup
 const loadingManager = new tjs.LoadingManager();
@@ -78,7 +119,7 @@ rgbeLoader
         render();
         //GLTF Models
         gltfLoader
-            .load(testModel.href, function(gltf){
+            .load(testModelURL.href, function(gltf){
                 gltf.scene.scale.setScalar(0.05);
                 scene.add(gltf.scene);
                 render();
@@ -152,8 +193,10 @@ function render(){
 
 //Animation Loop
 const clock = new tjs.Clock();
+let currentTime;
 
 function animate(){
+    currentTime = clock.getDelta();
     world.step(timeStep);
 
     ground.position.copy(groundBody.position);
@@ -162,9 +205,13 @@ function animate(){
     box.position.copy(boxBody.position);
     box.quaternion.copy(boxBody.quaternion);
 
+    if(characterControls){
+        characterControls.update(currentTime, keysPressed);
+    }
+
     render();
     stats.update();
-    controls.update(clock.getDelta());
+    controls.update(currentTime);
 }
 
 renderer.setAnimationLoop(animate);
