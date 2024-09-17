@@ -9,7 +9,7 @@ import { CharacterControls } from './tppControls';
 
 //URL Setup
 const hdri = new URL('./public/hdri/kloppenheim_02_4k.hdr', import.meta.url);
-const testModelURL = new URL('./public/models/test.glb', import.meta.url);
+const islandURL = new URL('./public/models/testIslandSmall.glb', import.meta.url);
 const characterURL = new URL('./public/models/remy.glb', import.meta.url);
 
 //WebGL Renderer Setup
@@ -31,47 +31,55 @@ const camera = new tjs.PerspectiveCamera(
 );
 
 const controls = new OrbitControls(camera, renderer.domElement);
-controls.enableDamping = true
-controls.minDistance = 5
-controls.maxDistance = 15
-controls.enablePan = false
-controls.maxPolarAngle = Math.PI / 2 - 0.05
+controls.enableDamping = true;
+controls.minDistance = 5;
+controls.maxDistance = 15;
+controls.enablePan = false;
+controls.maxPolarAngle = Math.PI / 2 - 0.05;
 controls.update();
 
 camera.position.set(8, 5, 3);
 
+const raycaster = new tjs.Raycaster();
+const downVector = new tjs.Vector3(0, -1, 0);
+let islandCenterTop;
+
 var characterControls;
+var character;
 new GLTFLoader()
     .load(characterURL.href, function (gltf) {
-        const model = gltf.scene;
-        model.traverse(function (object) {
-            if (object.isMesh) object.castShadow = true;
+        character = gltf.scene;
+        character.traverse(function (object) {
+            if (object.isMesh){
+                object.receiveShadow = true;
+                object.castShadow = true;
+            }
         });
-        scene.add(model);
+        scene.add(character);
 
         const gltfAnimations = gltf.animations;
-        const mixer = new tjs.AnimationMixer(model);
+        const mixer = new tjs.AnimationMixer(character);
         const animationsMap = new Map();
         gltfAnimations.filter(a => a.name != 'TPose').forEach((a) => {
             animationsMap.set(a.name, mixer.clipAction(a));
         });
 
-        characterControls = new CharacterControls(model, mixer, animationsMap, controls, camera,  'Idle');
+        characterControls = new CharacterControls(character, mixer, animationsMap, controls, camera,  'Idle');
     });
 
-const keysPressed = {  }
+const keysPressed = {  };
 const keyDisplayQueue = new KeyDisplay();
 document.addEventListener('keydown', (event) => {
-    keyDisplayQueue.down(event.key)
+    keyDisplayQueue.down(event.key);
     if (event.shiftKey && characterControls) {
-        characterControls.switchRunToggle()
+        characterControls.switchRunToggle();
     } else {
-        (keysPressed)[event.key.toLowerCase()] = true
+        (keysPressed)[event.key.toLowerCase()] = true;
     }
 }, false);
 document.addEventListener('keyup', (event) => {
     keyDisplayQueue.up(event.key);
-    (keysPressed)[event.key.toLowerCase()] = false
+    (keysPressed)[event.key.toLowerCase()] = false;
 }, false);
 
 //Loading Screen Setup
@@ -105,6 +113,7 @@ loadingManager.onError = function(url){
 const scene = new tjs.Scene();
 const gltfLoader= new GLTFLoader(loadingManager);
 const rgbeLoader = new RGBELoader(loadingManager);
+let island;
 
 scene.fog = new tjs.FogExp2(0xBCC8CC, 0.01); // Squared Exponential Fog
 
@@ -118,12 +127,25 @@ rgbeLoader
         render();
         //GLTF Models
         gltfLoader
-            .load(testModelURL.href, function(gltf){
-                gltf.scene.scale.setScalar(0.05);
-                scene.add(gltf.scene);
+            .load(islandURL.href, function(gltf){
+                island = gltf.scene;
+                //gltf.scene.scale.setScalar(0.05);
+                island.traverse(function (object) {
+                        if (object.isMesh) {
+                            object.receiveShadow = true;
+                            object.castShadow = true;
+                        }
+                  });
+
+                const boundingBox = new tjs.Box3().setFromObject(island);
+                islandCenterTop = new tjs.Vector3();
+                boundingBox.getCenter(islandCenterTop);
+                islandCenterTop.y = boundingBox.max.y;
+
+                scene.add(island);
                 render();
             }, undefined, function(err){
-                console.error(err);
+                console.error('Error loading the island model:', err);
             });
     });
 
@@ -178,7 +200,7 @@ function animate(){
     currentTime = clock.getDelta();
 
     if(characterControls){
-        characterControls.update(currentTime, keysPressed);
+        characterControls.update(currentTime, keysPressed, raycaster, island);
     }
 
     render();

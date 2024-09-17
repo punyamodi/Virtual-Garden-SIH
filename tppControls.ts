@@ -48,7 +48,7 @@ export class CharacterControls {
         this.toggleRun = !this.toggleRun;
     }
 
-    public update(delta: number, keysPressed: any) {
+    public update(delta: number, keysPressed: any, raycaster: tjs.Raycaster, ground: any) {
         const directionPressed = DIRECTIONS.some(key => keysPressed[key] == true);
 
         var play = '';
@@ -89,6 +89,11 @@ export class CharacterControls {
             this.walkDirection.y = 0;
             this.walkDirection.normalize();
             this.walkDirection.applyAxisAngle(this.rotateAngle, directionOffset);
+
+            // account for collisions
+            if (!this.detectCollision(raycaster, ground)) {
+                this.model.position.add(this.walkDirection);
+            }
 
             // run/walk velocity
             const velocity = this.currentAction == 'Run' ? this.runVelocity : this.walkVelocity;
@@ -138,5 +143,35 @@ export class CharacterControls {
         }
 
         return directionOffset;
+    }
+
+    //Ground Collision Detection
+    private detectCollision(raycaster: tjs.Raycaster, ground: any) {
+        const collisionRaycasters = new Array<tjs.Raycaster>();
+        const rayLength = 2.0;
+
+        const offsets = [
+        new tjs.Vector3(0.5, 1.0, 0),  // Right
+        new tjs.Vector3(-0.5, 1.0, 0), // Left
+        new tjs.Vector3(0, 1.0, 0.5),  // Front
+        new tjs.Vector3(0, 1.0, -0.5)  // Back
+        ];
+
+        const rayDirection = this.walkDirection.clone().normalize();
+
+        for (let i = 0; i < offsets.length; i++) {
+            const rayOrigin = this.model.position.clone().add(offsets[i]);
+            const raycaster = new tjs.Raycaster(rayOrigin, rayDirection);
+            collisionRaycasters.push(raycaster);
+        }
+
+        for (let i = 0; i < collisionRaycasters.length; i++) {
+            const intersects = collisionRaycasters[i].intersectObject(ground, true);
+            if (intersects.length > 0 && intersects[0].distance < rayLength) {
+                return true;
+            }
+        }
+
+        return false;
     }
 };
