@@ -4,7 +4,6 @@ import { OrbitControls } from 'three/examples/jsm/Addons.js';
 import { RGBELoader } from 'three/examples/jsm/Addons.js';
 import Stats from 'three/examples/jsm/libs/stats.module.js';
 import { GLTFLoader } from 'three/examples/jsm/Addons.js';
-import * as cannon from 'cannon-es';
 import { KeyDisplay } from './controlUtil';
 import { CharacterControls } from './tppControls';
 
@@ -154,26 +153,6 @@ scene.add(ground);
 // World / Physics Setup
 */
 
-const world = new cannon.World({
-    gravity: new cannon.Vec3(0, -9.80665, 0)
-});
-
-const timeStep = 1 / 60;
-
-const groundBody = new cannon.Body({
-    shape: new cannon.Plane(),
-    mass: 10,
-    type: cannon.Body.STATIC
-});
-world.addBody(groundBody);
-groundBody.quaternion.setFromEuler(-Math.PI / 2, 0, 0);
-
-const boxBody = new cannon.Body({
-    mass: 2,
-    shape: new cannon.Box(new cannon.Vec3(2, 2, 2)),
-    position: new cannon.Vec3(1, 20, 0)
-});
-world.addBody(boxBody);
 
 //GUI Setup
 const params = {
@@ -197,13 +176,6 @@ let currentTime;
 
 function animate(){
     currentTime = clock.getDelta();
-    world.step(timeStep);
-
-    ground.position.copy(groundBody.position);
-    ground.quaternion.copy(groundBody.quaternion);
-
-    box.position.copy(boxBody.position);
-    box.quaternion.copy(boxBody.quaternion);
 
     if(characterControls){
         characterControls.update(currentTime, keysPressed);

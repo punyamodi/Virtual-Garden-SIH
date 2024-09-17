@@ -5,51 +5,51 @@ import { A, D, DIRECTIONS, S, W } from './controlUtil';
 
 export class CharacterControls {
 
-    model: tjs.Group
-    mixer: tjs.AnimationMixer
-    animationsMap: Map<string, tjs.AnimationAction> = new Map() // Walk, Run, Idle
-    orbitControl: OrbitControls
-    camera: tjs.Camera
+    model: tjs.Group;
+    mixer: tjs.AnimationMixer;
+    animationsMap: Map<string, tjs.AnimationAction> = new Map(); // Walk, Run, Idle
+    orbitControl: OrbitControls;
+    camera: tjs.Camera;
 
     // state
-    toggleRun: boolean = true
-    currentAction: string
+    toggleRun: boolean = true;
+    currentAction: string;
     
     // temporary data
-    walkDirection = new tjs.Vector3()
-    rotateAngle = new tjs.Vector3(0, 1, 0)
-    rotateQuarternion: tjs.Quaternion = new tjs.Quaternion()
-    cameraTarget = new tjs.Vector3()
+    walkDirection = new tjs.Vector3();
+    rotateAngle = new tjs.Vector3(0, 1, 0);
+    rotateQuarternion: tjs.Quaternion = new tjs.Quaternion();
+    cameraTarget = new tjs.Vector3();
     
     // constants
-    fadeDuration: number = 0.2
-    runVelocity = 5
-    walkVelocity = 2
+    fadeDuration: number = 0.2;
+    runVelocity = 5;
+    walkVelocity = 2;
 
     constructor(model: tjs.Group,
         mixer: tjs.AnimationMixer, animationsMap: Map<string, tjs.AnimationAction>,
         orbitControl: OrbitControls, camera: tjs.Camera,
         currentAction: string) {
-        this.model = model
-        this.mixer = mixer
-        this.animationsMap = animationsMap
-        this.currentAction = currentAction
+        this.model = model;
+        this.mixer = mixer;
+        this.animationsMap = animationsMap;
+        this.currentAction = currentAction;
         this.animationsMap.forEach((value, key) => {
             if (key == currentAction) {
-                value.play()
+                value.play();
             }
         })
-        this.orbitControl = orbitControl
-        this.camera = camera
-        this.updateCameraTarget(0,0)
+        this.orbitControl = orbitControl;
+        this.camera = camera;
+        this.updateCameraTarget(0,0);
     }
 
     public switchRunToggle() {
-        this.toggleRun = !this.toggleRun
+        this.toggleRun = !this.toggleRun;
     }
 
     public update(delta: number, keysPressed: any) {
-        const directionPressed = DIRECTIONS.some(key => keysPressed[key] == true)
+        const directionPressed = DIRECTIONS.some(key => keysPressed[key] == true);
 
         var play = '';
         if (directionPressed && this.toggleRun) {
@@ -61,28 +61,28 @@ export class CharacterControls {
         }
 
         if (this.currentAction != play) {
-            const toPlay = this.animationsMap.get(play)
-            const current = this.animationsMap.get(this.currentAction)
+            const toPlay = this.animationsMap.get(play);
+            const current = this.animationsMap.get(this.currentAction);
 
-            current.fadeOut(this.fadeDuration)
-            toPlay.reset().fadeIn(this.fadeDuration).play();
+            current!.fadeOut(this.fadeDuration);
+            toPlay!.reset().fadeIn(this.fadeDuration).play();
 
-            this.currentAction = play
+            this.currentAction = play;
         }
 
-        this.mixer.update(delta)
+        this.mixer.update(delta);
 
         if (this.currentAction == 'Run' || this.currentAction == 'Walk') {
             // calculate towards camera direction
             var angleYCameraDirection = Math.atan2(
                     (this.camera.position.x - this.model.position.x), 
-                    (this.camera.position.z - this.model.position.z))
+                    (this.camera.position.z - this.model.position.z));
             // diagonal movement angle offset
-            var directionOffset = this.directionOffset(keysPressed)
+            var directionOffset = this.directionOffset(keysPressed);
 
             // rotate model
-            this.rotateQuarternion.setFromAxisAngle(this.rotateAngle, angleYCameraDirection + directionOffset)
-            this.model.quaternion.rotateTowards(this.rotateQuarternion, 0.2)
+            this.rotateQuarternion.setFromAxisAngle(this.rotateAngle, angleYCameraDirection + directionOffset);
+            this.model.quaternion.rotateTowards(this.rotateQuarternion, 0.2);
 
             // calculate direction
             this.camera.getWorldDirection(this.walkDirection);
@@ -91,52 +91,52 @@ export class CharacterControls {
             this.walkDirection.applyAxisAngle(this.rotateAngle, directionOffset);
 
             // run/walk velocity
-            const velocity = this.currentAction == 'Run' ? this.runVelocity : this.walkVelocity
+            const velocity = this.currentAction == 'Run' ? this.runVelocity : this.walkVelocity;
 
             // move model & camera
-            const moveX = this.walkDirection.x * velocity * delta
-            const moveZ = this.walkDirection.z * velocity * delta
-            this.model.position.x += moveX
-            this.model.position.z += moveZ
-            this.updateCameraTarget(moveX, moveZ)
+            const moveX = this.walkDirection.x * velocity * delta;
+            const moveZ = this.walkDirection.z * velocity * delta;
+            this.model.position.x += moveX;
+            this.model.position.z += moveZ;
+            this.updateCameraTarget(moveX, moveZ);
         }
     }
 
     private updateCameraTarget(moveX: number, moveZ: number) {
         // move camera
-        this.camera.position.x += moveX
-        this.camera.position.z += moveZ
+        this.camera.position.x += moveX;
+        this.camera.position.z += moveZ;
 
         // update camera target
-        this.cameraTarget.x = this.model.position.x
-        this.cameraTarget.y = this.model.position.y + 1
-        this.cameraTarget.z = this.model.position.z
-        this.orbitControl.target = this.cameraTarget
+        this.cameraTarget.x = this.model.position.x;
+        this.cameraTarget.y = this.model.position.y + 1;
+        this.cameraTarget.z = this.model.position.z;
+        this.orbitControl.target = this.cameraTarget;
     }
 
     private directionOffset(keysPressed: any) {
-        var directionOffset = 0 // w
+        var directionOffset = 0; // w
 
         if (keysPressed[W]) {
             if (keysPressed[A]) {
-                directionOffset = Math.PI / 4 // w+a
+                directionOffset = Math.PI / 4; // w+a
             } else if (keysPressed[D]) {
-                directionOffset = - Math.PI / 4 // w+d
+                directionOffset = - Math.PI / 4; // w+d
             }
         } else if (keysPressed[S]) {
             if (keysPressed[A]) {
-                directionOffset = Math.PI / 4 + Math.PI / 2 // s+a
+                directionOffset = Math.PI / 4 + Math.PI / 2; // s+a
             } else if (keysPressed[D]) {
-                directionOffset = -Math.PI / 4 - Math.PI / 2 // s+d
+                directionOffset = -Math.PI / 4 - Math.PI / 2; // s+d
             } else {
-                directionOffset = Math.PI // s
+                directionOffset = Math.PI; // s
             }
         } else if (keysPressed[A]) {
-            directionOffset = Math.PI / 2 // a
+            directionOffset = Math.PI / 2; // a
         } else if (keysPressed[D]) {
-            directionOffset = - Math.PI / 2 // d
+            directionOffset = - Math.PI / 2; // d
         }
 
-        return directionOffset
+        return directionOffset;
     }
-}
+};
