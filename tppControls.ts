@@ -27,6 +27,7 @@ export class CharacterControls {
     fadeDuration: number = 0.2;
     runVelocity: number = 2 * ratio;
     walkVelocity: number = 1.4 * ratio;
+    downVector: tjs.Vector3;
 
     constructor(model: tjs.Group,
         mixer: tjs.AnimationMixer, animationsMap: Map<string, tjs.AnimationAction>,
@@ -42,6 +43,7 @@ export class CharacterControls {
         })
         this.orbitControl = orbitControl;
         this.camera = camera;
+        this.downVector = new tjs.Vector3(0, -1, 0);
         this.updateCameraTarget(0,0);
     }
 
@@ -49,7 +51,7 @@ export class CharacterControls {
         this.toggleRun = !this.toggleRun;
     }
 
-    public update(delta: number, keysPressed: any, raycaster: tjs.Raycaster, ground: any) {
+    public update(delta: number, keysPressed: any, raycaster: tjs.Raycaster, ground: tjs.Group) {
         const directionPressed = DIRECTIONS.some(key => keysPressed[key] == true);
 
         var play = '';
@@ -94,6 +96,16 @@ export class CharacterControls {
             // account for collisions
             if (!this.detectCollision(raycaster, ground)) {
                 this.model.position.add(this.walkDirection);
+            }
+
+            const rayOrigin = this.model.position.clone();
+            rayOrigin.y += 10;
+            raycaster.set(rayOrigin, this.downVector);
+            const intersects = raycaster.intersectObject(ground, true);
+
+            if (intersects.length > 0) {
+                const targetY = intersects[0].point.y + 1;
+                this.model.position.y = targetY;
             }
 
             // run/walk velocity

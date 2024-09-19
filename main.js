@@ -9,7 +9,7 @@ import { CharacterControls } from './tppControls';
 
 //URL Setup
 const hdri = new URL('./public/hdri/kloppenheim_02_4k.hdr', import.meta.url);
-const islandURL = new URL('./public/models/testIslandSmall.glb', import.meta.url);
+const islandURL = new URL('./public/models/garden.glb', import.meta.url);
 const characterURL = new URL('./public/models/remy.glb', import.meta.url);
 
 //WebGL Renderer Setup
@@ -128,7 +128,7 @@ rgbeLoader
         gltfLoader
             .load(islandURL.href, function(gltf){
                 island = gltf.scene;
-                gltf.scene.scale.setScalar(0.2);
+                gltf.scene.scale.setScalar(1.5);
                 island.traverse(function (object) {
                         if (object.isMesh) {
                             object.receiveShadow = true;
@@ -163,13 +163,13 @@ const box = new tjs.Mesh(boxGeo, boxMat);
 scene.add(box);
 box.position.set(8, 8, 3);
 
-const groundGeo = new tjs.PlaneGeometry(200, 200, 10, 10);
-const groundMat = new tjs.MeshPhysicalMaterial({
-    side: tjs.DoubleSide
-});
-const ground = new tjs.Mesh(groundGeo, groundMat);
-ground.rotateX(Math.PI / 2);
-scene.add(ground);
+// const groundGeo = new tjs.PlaneGeometry(200, 200, 10, 10);
+// const groundMat = new tjs.MeshPhysicalMaterial({
+//     side: tjs.DoubleSide
+// });
+// const ground = new tjs.Mesh(groundGeo, groundMat);
+// ground.rotateX(Math.PI / 2);
+// scene.add(ground);
 
 /*
 // World / Physics Setup
