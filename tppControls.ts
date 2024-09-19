@@ -3,6 +3,8 @@ import { OrbitControls } from 'three/examples/jsm/Addons.js';
 import { A, D, DIRECTIONS, S, W } from './controlUtil';
 
 
+export const ratio = 1;
+
 export class CharacterControls {
 
     model: tjs.Group;
@@ -23,8 +25,8 @@ export class CharacterControls {
     
     // constants
     fadeDuration: number = 0.2;
-    runVelocity = 5;
-    walkVelocity = 2;
+    runVelocity: number = 2 * ratio;
+    walkVelocity: number = 1.4 * ratio;
 
     constructor(model: tjs.Group,
         mixer: tjs.AnimationMixer, animationsMap: Map<string, tjs.AnimationAction>,
@@ -35,9 +37,8 @@ export class CharacterControls {
         this.animationsMap = animationsMap;
         this.currentAction = currentAction;
         this.animationsMap.forEach((value, key) => {
-            if (key == currentAction) {
+            if (key == currentAction)
                 value.play();
-            }
         })
         this.orbitControl = orbitControl;
         this.camera = camera;
@@ -147,14 +148,15 @@ export class CharacterControls {
 
     //Ground Collision Detection
     private detectCollision(raycaster: tjs.Raycaster, ground: any) {
+        const c_size = 1.68;
         const collisionRaycasters = new Array<tjs.Raycaster>();
-        const rayLength = 2.0;
+        const rayLength = c_size * 0.5;
 
         const offsets = [
-        new tjs.Vector3(0.5, 1.0, 0),  // Right
-        new tjs.Vector3(-0.5, 1.0, 0), // Left
-        new tjs.Vector3(0, 1.0, 0.5),  // Front
-        new tjs.Vector3(0, 1.0, -0.5)  // Back
+            new tjs.Vector3(c_size / 2, c_size / 2, 0),  // Right
+            new tjs.Vector3(-c_size / 2, c_size / 2, 0), // Left
+            new tjs.Vector3(0, c_size / 2, c_size / 2),  // Front
+            new tjs.Vector3(0, c_size / 2, -c_size / 2)  // Back
         ];
 
         const rayDirection = this.walkDirection.clone().normalize();

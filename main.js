@@ -41,7 +41,6 @@ controls.update();
 camera.position.set(8, 5, 3);
 
 const raycaster = new tjs.Raycaster();
-const downVector = new tjs.Vector3(0, -1, 0);
 let islandCenterTop;
 
 var characterControls;
@@ -129,7 +128,7 @@ rgbeLoader
         gltfLoader
             .load(islandURL.href, function(gltf){
                 island = gltf.scene;
-                //gltf.scene.scale.setScalar(0.05);
+                gltf.scene.scale.setScalar(0.2);
                 island.traverse(function (object) {
                         if (object.isMesh) {
                             object.receiveShadow = true;
@@ -169,6 +168,7 @@ const groundMat = new tjs.MeshPhysicalMaterial({
     side: tjs.DoubleSide
 });
 const ground = new tjs.Mesh(groundGeo, groundMat);
+ground.rotateX(Math.PI / 2);
 scene.add(ground);
 
 /*
