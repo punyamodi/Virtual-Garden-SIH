@@ -2,7 +2,6 @@
   "name": "virtualgarden",
   "version": "1.0.0",
   "description": "SIH Project",
-  "main": "main.js",
   "scripts": {
     "start": "parcel ./index.html",
     "test": "echo \"Error: no test specified\" && exit 1"

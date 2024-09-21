@@ -19,7 +19,6 @@ document.body.appendChild(renderer.domElement);
 renderer.setPixelRatio(window.devicePixelRatio);
 renderer.toneMapping = tjs.AgXToneMapping; //AGX Tone Mapping
 renderer.toneMappingExposure = 1.0;
-renderer.outputEncoding = tjs.sRGBEncoding;
 
 //Camera + Control Setup
 //Near & Far Values here determine the starting & ending points of view distance, heavily affects performance.
